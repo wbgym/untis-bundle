@@ -1,0 +1,193 @@
+<div class="mod_substitutions block <?= $this->classes ?>">
+
+<h2>Übersicht der Stundenplanänderungen</h2>
+
+<p><i>Zuletzt aktualisiert: <?= date('d.m.Y H:i',$this->update) ?>.</i></p>
+
+<div class="selection">
+	<?php if($this->user) : ?>
+		<a href="<?= $this->mineHref ?>" class="btn<?php if($this->selector != 'all') : ?> active<?php endif; ?>">
+			<?= $this->buttonLabel ?>
+		</a>
+	<?php endif; ?>
+	<a href="<?= $this->allHref ?>" class="btn<?php if($this->selector == 'all') : ?> active<?php endif; ?>">
+		Alle Vertretungen
+	</a>
+</div>
+	
+<?php if($this->subs) : ?>
+<?php $first = true; ?>
+<?php foreach($this->subs as $i => $years) : ?>
+	
+	<div class="vplan-block-header<?php if($first) : ?> open<?php endif; ?>">
+		<h2>
+			<?= $this->dateStr[$i]['date'] ?>
+			<?php if($this->dateStr[$i]['info']) : ?><span class="vplan-week" style="color:#dd5247"> <?= $this->dateStr[$i]['info'] ?></span><?php endif; ?>
+		</h2>
+	</div>
+	
+	<div class="vplan-block"<?php if($first) : ?>style="display:block"<?php endif; ?>>
+	
+	<?php if($years) : ?>
+
+	<div class="table"><table class="vertretungsplan">
+		<thead>
+			<tr>
+				<th class="col_first">Klasse</th>
+				<th>Stunde</th>
+				<th>Art</th>
+				<th>Fach</th>
+				<th>Lehrer</th>
+				<th>Raum</th>
+				<th>Fach (neu)</th>
+				<th>Lehrer (neu)</th>
+				<th>Raum (neu)</th>
+				<th>Bemerkung</th>
+			</tr>
+		</thead>
+		<tbody>
+			<?php foreach($years as $yr => $courses) : ?><tr>
+				<th colspan="10" align="center"><b><?php if($yr == '11' || $yr == '12') : ?>Jahrgang <?php else : ?>Klasse <?php endif; ?><?php echo $yr; ?></b></th></tr>
+				<?php foreach($courses as $times) : ?>
+				<?php foreach($times as $time => $subs) : ?>
+					<?php foreach($subs as $sub) : ?>
+					<tr>
+						<!-- Course -->
+						<td><?php echo $sub['course'] ?></td>
+					
+						<!-- Time -->
+						<td><?php if($sub['time']) : ?><?= $sub['time'] ?><?php else : ?><?= $sub['startTime'] ?> - <?= $sub['endTime'] ?><?php endif; ?></td>
+						
+						<!-- Type -->
+						<td style="white-space:nowrap">
+							<?= $sub['type_str'] ?><?php if($sub['type'] == 'stxt') : ?>: <?= $sub['txt'] ?><?php endif; ?>
+							<?php if($sub['reschedule']) : ?>
+								<div class="abbr">
+									<div class="invisible abbr-title"><?= $sub['reschedule']['str'] ?></div>
+									<span class="info">i</span>
+								</div>
+							<?php endif; ?>
+						</td>
+						
+						<!-- Original Subject -->
+						<td>
+						<?php foreach($sub['su'] as $subject) : ?>
+							<?php if($subject->orgname) : ?>
+								<span style="text-decoration:line-through;"><?= $subject->orgname ?></span>
+							<?php else : ?>
+							<?php if($sub['type'] == 'cancel' || $sub['type'] == 'free') : ?><span style="text-decoration:line-through;"><?php endif; ?>
+								<?= $subject->name ?> 
+							<?php if($sub['type'] == 'cancel' || $sub['type'] == 'free') : ?></span><?php endif; ?>
+							<?php endif; ?>
+						<?php endforeach; ?>
+						</td>
+						
+						<!-- Original Teacher -->
+						<td> 
+						<?php foreach($sub['te'] as $teacher) : ?>
+							<?php if($teacher->orgname) : ?>
+								<span style="text-decoration:line-through;">
+									<?php if($teacher->orginfo) : ?>
+									<div class="abbr">
+										<div class="invisible abbr-title">
+											<p><?= $teacher->orginfo['gender'] == 'male' ? 'Herr ' : 'Frau ' ?>
+											<?= $teacher->orginfo['lastname'] ?></p>
+											<p><a href="mailto:<?= $teacher->orginfo['email'] ?>"><?= $teacher->orginfo['email'] ?></a></p>
+										</div>
+										<span class="abbr-text"><?= $teacher->orgname ?> </span>
+									</div>
+									<?php else : ?><?= $teacher->orgname ?><?php endif; ?>
+								</span>
+							<?php else : ?>
+							<?php if($sub['type'] == 'cancel' || $sub['type'] == 'free') : ?><span style="text-decoration:line-through;"><?php endif; ?>
+									<?php if($teacher->info) : ?>
+									<div class="abbr">
+										<div class="invisible abbr-title">
+											<p><?= $teacher->info['gender'] == 'male' ? 'Herr ' : 'Frau ' ?>
+											<?= $teacher->info['lastname'] ?></p>
+											<p><a href="mailto:<?= $teacher->info['email'] ?>"><?= $teacher->info['email'] ?></a></p>
+										</div>
+										<span class="abbr-text"><?= $teacher->name ?> </span>
+									</div>
+									<?php else : ?><?= $teacher->name ?><?php endif; ?>
+							<?php if($sub['type'] == 'cancel' || $sub['type'] == 'free') : ?></span><?php endif; ?>
+							<?php endif; ?>
+						<?php endforeach; ?> 
+						</td>
+						
+						<!-- Original Room -->
+						<td> 
+						<?php foreach($sub['ro'] as $room) : ?>
+							<?php if($room->orgname) : ?>
+								<span style="text-decoration:line-through;"><?= $room->orgname ?></span> 
+							<?php else : ?>
+							<?php if($sub['type'] == 'cancel' || $sub['type'] == 'free') : ?><span style="text-decoration:line-through;"><?php endif; ?>
+								<?= $room->name ?> 
+							<?php if($sub['type'] == 'cancel' || $sub['type'] == 'free') : ?></span><?php endif; ?>
+							<?php endif; ?>
+						<?php endforeach; ?>
+						</td>
+						
+						<!-- New Subject -->
+						<td>
+						<?php foreach($sub['su'] as $subject) : ?>
+							<?php if($sub['type'] != 'cancel' && $sub['type'] != 'free') : ?>
+								<?= $subject->name ?> 
+							<?php endif; ?>
+						<?php endforeach; ?>
+						</td>
+						
+						<!-- New Teacher -->
+						<td>
+						<?php foreach($sub['te'] as $teacher) : ?>
+							<?php if($sub['type'] != 'cancel' && $sub['type'] != 'free') : ?>
+								<?php if($teacher->info) : ?>
+								<div class="abbr">
+									<div class="invisible abbr-title">
+										<p><?= $teacher->info['gender'] == 'male' ? 'Herr ' : 'Frau ' ?>
+										<?= $teacher->info['lastname'] ?></p>
+										<p><a href="mailto:<?= $teacher->info['email'] ?>"><?= $teacher->info['email'] ?></a></p>
+									</div>
+									<span class="abbr-text"><?= $teacher->name ?></span>
+								</div>
+								<?php else : ?><?= $teacher->name ?><?php endif; ?>
+							<?php endif; ?>
+						<?php endforeach; ?>
+						</td>
+				
+						<!-- New Room -->
+						<td>
+						<?php foreach($sub['ro'] as $room) : ?>
+							<?php if($sub['type'] != 'cancel' && $sub['type'] != 'free') : ?>
+								<?= $room->name ?> 
+							<?php endif; ?>
+						<?php endforeach; ?>
+						</td>
+						
+						<!-- Info-Text -->
+						<td>
+						<?php if($sub['txt'] && $sub['type'] != 'stxt'): ?>
+							 <?= $sub['txt'] ?>
+						<?php endif; ?>
+						</td>
+					</tr>
+					<?php endforeach; ?>
+				<?php endforeach; ?>
+				<?php endforeach; ?>
+			<?php endforeach; ?>
+	</tbody>
+	</table></div>
+
+	<?php else : ?>
+		<p>Keine Vertretungen vorhanden.</p>
+	<?php endif; ?>
+	
+	<?php $first = false; ?>
+
+	</div>
+
+<?php endforeach; ?>
+<?php else : ?>
+	<p>Keine Vertretungen für aktuelle Auswahl gefunden.</p>
+<?php endif; ?>
+</div>

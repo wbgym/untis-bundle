@@ -1,0 +1,77 @@
+<?php
+
+/**
+ * WBGym
+ * 
+ * Copyright (C) 2016 Webteam Weinberg-Gymnasium Kleinmachnow
+ * 
+ * @package 	WGBym
+ * @version 	0.3.0
+ * @author 		Johannes Cram <craj.me@gmail.com>
+ * @license 	http://www.gnu.org/licenses/gpl-3.0.html GPL
+ */
+
+/**
+ * Namespace
+ */
+namespace WBGym;
+
+class WUHelper extends \System
+{	
+	/*
+	* Converts WebUntis dates (e.g. 20160910) to timestamp
+	*
+	* @param int $intDate
+	* @return int
+	*/
+	public function dateToTime($intDate) {
+		if(strlen($intDate) != 8) return false;
+		$arrDate = array(
+			'year' => substr($intDate,0,4),
+			'month' => substr($intDate,4,2),
+			'day' => substr($intDate,6,2),
+		);
+		return strtotime($arrDate['year'] . '-' . $arrDate['month'] . '-' . $arrDate['day']);
+	}
+	
+	/*
+	* Returns the School Hour from beginning and ending (e.g. 730 - 815)
+	*
+	* @param int $intStart
+	* @param int $intEnd
+	* @return int/str School Hour
+	*/
+	public function getSchoolHour($intStart,$intEnd) {
+		$arrStdBegin = $GLOBALS['TL_LANG']['wbuntis']['school_hours']['begin'];
+		$arrStdEnd = $GLOBALS['TL_LANG']['wbuntis']['school_hours']['end'];
+		
+		//Get Beginning
+		if($arrStdBegin[$intStart]) 
+			$strTime = $arrStdBegin[$intStart];
+		
+		//Get Ending
+		if($arrStdEnd[$intEnd] && $arrStdBegin[$intStart] != $arrStdEnd[$intEnd])
+				$strTime .= ' - ' . $arrStdEnd[$intEnd];
+		
+		if($intStart < 730 && $intEnd > 1725)
+			$strTime = 'Ganztägig';
+		
+		return $strTime;
+	}
+	
+	/*
+	* Returns string for substitution type by substitution array
+	*
+	* @param array $arrSub
+	* @return str
+	*/
+	public function subType($arrSub) {
+		if($arrSub['type'] == 'add') {
+			if($arrSub['su']) $category = 'class';
+			else $category = 'no_class';
+			return $GLOBALS['TL_LANG']['wbuntis']['sub_types'][$arrSub['type']][$category];
+		}
+		return $GLOBALS['TL_LANG']['wbuntis']['sub_types'][$arrSub['type']];
+	}
+	
+}

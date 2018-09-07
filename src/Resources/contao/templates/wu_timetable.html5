@@ -1,0 +1,16 @@
+<div class="mod_timetable">
+<div class="ce_text hint">
+	<p>Diese Daten stammen aus der <a href="https://demo.webuntis.com/WebUntis" target="_blank">WebUntis Demo</a> und werden hier zum Testen der WebUntis API verwendet.</p>
+</div>
+
+<pre><?php //print_r($this->teachers); ?></pre>
+<pre><?php //print_r($this->students); ?></pre>
+<pre><?php //print_r($this->classes); ?></pre>
+<pre><?php //print_r($this->subjects); ?></pre>
+<pre><?php //print_r($this->departments); ?></pre>
+
+<!-- Der eigentliche Stundenplan: -->
+<h2>Stundenplan für <?= $this->person['fn'] . ' ' . $this->person['sn'] ?> (<?= $this->person['acronym'] ?>) - ID <?= $this->person['id'] ?></h2>
+<pre><?php print_r($this->timetable); ?></pre>
+
+</div>
