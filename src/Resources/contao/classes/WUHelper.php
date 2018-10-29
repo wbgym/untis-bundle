@@ -2,9 +2,9 @@
 
 /**
  * WBGym
- * 
+ *
  * Copyright (C) 2016 Webteam Weinberg-Gymnasium Kleinmachnow
- * 
+ *
  * @package 	WGBym
  * @version 	0.3.0
  * @author 		Johannes Cram <craj.me@gmail.com>
@@ -16,15 +16,17 @@
  */
 namespace WBGym;
 
-class WUHelper extends \System
-{	
-	/*
+use System;
+
+class WUHelper extends System
+{
+	/**
 	* Converts WebUntis dates (e.g. 20160910) to timestamp
 	*
 	* @param int $intDate
 	* @return int
 	*/
-	public function dateToTime($intDate) {
+	public function dateToTime(int $intDate):int {
 		if(strlen($intDate) != 8) return false;
 		$arrDate = array(
 			'year' => substr($intDate,0,4),
@@ -33,39 +35,39 @@ class WUHelper extends \System
 		);
 		return strtotime($arrDate['year'] . '-' . $arrDate['month'] . '-' . $arrDate['day']);
 	}
-	
-	/*
+
+	/**
 	* Returns the School Hour from beginning and ending (e.g. 730 - 815)
 	*
 	* @param int $intStart
 	* @param int $intEnd
-	* @return int/str School Hour
+	* @return string School Hour
 	*/
-	public function getSchoolHour($intStart,$intEnd) {
+	public function getSchoolHour(int $intStart, int $intEnd):?string {
 		$arrStdBegin = $GLOBALS['TL_LANG']['wbuntis']['school_hours']['begin'];
 		$arrStdEnd = $GLOBALS['TL_LANG']['wbuntis']['school_hours']['end'];
-		
+
 		//Get Beginning
-		if($arrStdBegin[$intStart]) 
+		if($arrStdBegin[$intStart])
 			$strTime = $arrStdBegin[$intStart];
-		
+
 		//Get Ending
 		if($arrStdEnd[$intEnd] && $arrStdBegin[$intStart] != $arrStdEnd[$intEnd])
 				$strTime .= ' - ' . $arrStdEnd[$intEnd];
-		
+
 		if($intStart < 730 && $intEnd > 1725)
 			$strTime = 'Ganztägig';
-		
+
 		return $strTime;
 	}
-	
-	/*
+
+	/**
 	* Returns string for substitution type by substitution array
 	*
 	* @param array $arrSub
-	* @return str
+	* @return string
 	*/
-	public function subType($arrSub) {
+	public function subType(array $arrSub):string {
 		if($arrSub['type'] == 'add') {
 			if($arrSub['su']) $category = 'class';
 			else $category = 'no_class';
@@ -73,5 +75,5 @@ class WUHelper extends \System
 		}
 		return $GLOBALS['TL_LANG']['wbuntis']['sub_types'][$arrSub['type']];
 	}
-	
+
 }

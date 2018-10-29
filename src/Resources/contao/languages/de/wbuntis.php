@@ -2,19 +2,19 @@
 
 /**
  * WBGym
- * 
+ *
  * Copyright (C) 2016 Webteam Weinberg-Gymnasium Kleinmachnow
- * 
+ *
  * @package     WGBym
  * @author      Johannes Cram <craj.me@gmail.com>
  * @license     http://www.gnu.org/licenses/gpl-3.0.html GPL
  */
 
- $GLOBALS['TL_LANG']['wbuntis']['sub_types'] = array(
+ $GLOBALS['TL_LANG']['wbuntis']['sub_types'] = [
 	'subst' 	=> 'Vertretung',
 	'cancel' 	=> 'Entfall',
 	'rmchg'		=> 'Raumwechsel',
-	'add'		=> array('class' => 'Unterricht', 'no_class' => 'Veranstaltung'),
+	'add'		=> ['class' => 'Unterricht', 'no_class' => 'Veranstaltung'],
 	'stxt'		=> 'Information',
 	'shift'		=> 'Unterricht geändert',
 	'free'		=> 'Frei',
@@ -26,10 +26,10 @@
 	'ac'		=> 'Aktivität',
 	'holi'		=> 'Ferien',
 	'other'		=> 'Andere'
- );
- 
+ ];
+
  //MOVE BETTER TO CONFIG FILE!
- $GLOBALS['TL_LANG']['wbuntis']['school_hours']['begin'] = array(
+ $GLOBALS['TL_LANG']['wbuntis']['school_hours']['begin'] = [
 	'730' 	=> 1,
 	'815' 	=> 2,
 	'925' 	=> 3,
@@ -41,9 +41,9 @@
 	'1500' 	=> 9,
 	'1545' 	=> 10,
 	'1640' 	=> 11,
- );
- 
-  $GLOBALS['TL_LANG']['wbuntis']['school_hours']['end'] = array(
+];
+
+  $GLOBALS['TL_LANG']['wbuntis']['school_hours']['end'] = [
 	'815' 	=> 1,
 	'900' 	=> 2,
 	'1010' 	=> 3,
@@ -55,6 +55,6 @@
 	'1545' 	=> 9,
 	'1630' 	=> 10,
 	'1725' 	=> 11,
- );
- 
+];
+
  ?>
