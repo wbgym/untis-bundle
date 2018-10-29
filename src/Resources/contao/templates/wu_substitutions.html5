@@ -3,7 +3,11 @@
 <h2>Übersicht der Stundenplanänderungen</h2>
 
 <p><i>Zuletzt aktualisiert: <?= date('d.m.Y H:i',$this->update) ?>.</i></p>
-
+<?php if (!is_null($this->hint)): ?>
+<div class="hint ce_text">
+	<p>Hinweis: <?= $this->hint ?></p>
+</div><br />
+<?php endif; ?>
 <div class="selection">
 	<?php if($this->user) : ?>
 		<a href="<?= $this->mineHref ?>" class="btn<?php if($this->selector != 'all') : ?> active<?php endif; ?>">
@@ -14,20 +18,20 @@
 		Alle Vertretungen
 	</a>
 </div>
-	
+
 <?php if($this->subs) : ?>
 <?php $first = true; ?>
 <?php foreach($this->subs as $i => $years) : ?>
-	
+
 	<div class="vplan-block-header<?php if($first) : ?> open<?php endif; ?>">
 		<h2>
 			<?= $this->dateStr[$i]['date'] ?>
 			<?php if($this->dateStr[$i]['info']) : ?><span class="vplan-week" style="color:#dd5247"> <?= $this->dateStr[$i]['info'] ?></span><?php endif; ?>
 		</h2>
 	</div>
-	
+
 	<div class="vplan-block"<?php if($first) : ?>style="display:block"<?php endif; ?>>
-	
+
 	<?php if($years) : ?>
 
 	<div class="table"><table class="vertretungsplan">
@@ -54,10 +58,10 @@
 					<tr>
 						<!-- Course -->
 						<td><?php echo $sub['course'] ?></td>
-					
+
 						<!-- Time -->
 						<td><?php if($sub['time']) : ?><?= $sub['time'] ?><?php else : ?><?= $sub['startTime'] ?> - <?= $sub['endTime'] ?><?php endif; ?></td>
-						
+
 						<!-- Type -->
 						<td style="white-space:nowrap">
 							<?= $sub['type_str'] ?><?php if($sub['type'] == 'stxt') : ?>: <?= $sub['txt'] ?><?php endif; ?>
@@ -68,7 +72,7 @@
 								</div>
 							<?php endif; ?>
 						</td>
-						
+
 						<!-- Original Subject -->
 						<td>
 						<?php foreach($sub['su'] as $subject) : ?>
@@ -76,14 +80,14 @@
 								<span style="text-decoration:line-through;"><?= $subject->orgname ?></span>
 							<?php else : ?>
 							<?php if($sub['type'] == 'cancel' || $sub['type'] == 'free') : ?><span style="text-decoration:line-through;"><?php endif; ?>
-								<?= $subject->name ?> 
+								<?= $subject->name ?>
 							<?php if($sub['type'] == 'cancel' || $sub['type'] == 'free') : ?></span><?php endif; ?>
 							<?php endif; ?>
 						<?php endforeach; ?>
 						</td>
-						
+
 						<!-- Original Teacher -->
-						<td> 
+						<td>
 						<?php foreach($sub['te'] as $teacher) : ?>
 							<?php if($teacher->orgname) : ?>
 								<span style="text-decoration:line-through;">
@@ -112,31 +116,31 @@
 									<?php else : ?><?= $teacher->name ?><?php endif; ?>
 							<?php if($sub['type'] == 'cancel' || $sub['type'] == 'free') : ?></span><?php endif; ?>
 							<?php endif; ?>
-						<?php endforeach; ?> 
+						<?php endforeach; ?>
 						</td>
-						
+
 						<!-- Original Room -->
-						<td> 
+						<td>
 						<?php foreach($sub['ro'] as $room) : ?>
 							<?php if($room->orgname) : ?>
-								<span style="text-decoration:line-through;"><?= $room->orgname ?></span> 
+								<span style="text-decoration:line-through;"><?= $room->orgname ?></span>
 							<?php else : ?>
 							<?php if($sub['type'] == 'cancel' || $sub['type'] == 'free') : ?><span style="text-decoration:line-through;"><?php endif; ?>
-								<?= $room->name ?> 
+								<?= $room->name ?>
 							<?php if($sub['type'] == 'cancel' || $sub['type'] == 'free') : ?></span><?php endif; ?>
 							<?php endif; ?>
 						<?php endforeach; ?>
 						</td>
-						
+
 						<!-- New Subject -->
 						<td>
 						<?php foreach($sub['su'] as $subject) : ?>
 							<?php if($sub['type'] != 'cancel' && $sub['type'] != 'free') : ?>
-								<?= $subject->name ?> 
+								<?= $subject->name ?>
 							<?php endif; ?>
 						<?php endforeach; ?>
 						</td>
-						
+
 						<!-- New Teacher -->
 						<td>
 						<?php foreach($sub['te'] as $teacher) : ?>
@@ -154,16 +158,16 @@
 							<?php endif; ?>
 						<?php endforeach; ?>
 						</td>
-				
+
 						<!-- New Room -->
 						<td>
 						<?php foreach($sub['ro'] as $room) : ?>
 							<?php if($sub['type'] != 'cancel' && $sub['type'] != 'free') : ?>
-								<?= $room->name ?> 
+								<?= $room->name ?>
 							<?php endif; ?>
 						<?php endforeach; ?>
 						</td>
-						
+
 						<!-- Info-Text -->
 						<td>
 						<?php if($sub['txt'] && $sub['type'] != 'stxt'): ?>
@@ -181,7 +185,7 @@
 	<?php else : ?>
 		<p>Keine Vertretungen vorhanden.</p>
 	<?php endif; ?>
-	
+
 	<?php $first = false; ?>
 
 	</div>

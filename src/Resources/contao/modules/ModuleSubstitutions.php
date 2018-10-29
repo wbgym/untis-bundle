@@ -2,12 +2,13 @@
 
 /**
  * WBGym
- * 
+ *
  * Copyright (C) 2016-2017 Webteam Weinberg-Gymnasium Kleinmachnow
- * 
+ *
  * @package 	WGBym
- * @version 	0.3.0
+ * @version 	0.4.0
  * @author 		Johannes Cram <craj.me@gmail.com>
+ * @author 		Markus Mielimonka <mmi.github@t-online.de>
  * @license 	http://www.gnu.org/licenses/gpl-3.0.html GPL
  */
 
@@ -16,27 +17,42 @@
  */
 namespace WBGym;
 
-class ModuleSubstitutions extends \Module
-{
-protected $strTemplate = 'wu_substitutions';
+use BackendTemplate;
+use Exception;
+use FrontendUser;
+use Module;
+use stdClass;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use System;
 
-protected $subsRaw = array();
-protected $arrSubs = array();
-protected $arrDateStr = array();
-protected $intUpdate = 0;
-protected $intStart = 0;
-protected $intEnd = 0;
-/*
-* DEBUG - expanded vplan range (+- 4 days)
-*/
-protected $blnDebug = false;
+
+
+class ModuleSubstitutions extends Module
+{
+	protected $strTemplate = 'wu_substitutions';
+
+	protected $arrSubs = [];
+
+	protected $arrDateStr = [];
+	protected $arrSubsRaw=[];
+
+	/**
+	 * the substitutions model
+	 * @var Substitutions
+	 */
+	protected $substitutions;
+	/**
+	* DEBUG - expanded vplan range (+- 4 days)
+	* @var bool
+	*/
+	protected $blnDebug = false;
 
 
 	public function generate()
 	{
 		if (TL_MODE == 'BE')
 		{
-			$objTemplate = new \BackendTemplate('be_wildcard');
+			$objTemplate = new BackendTemplate('be_wildcard');
 
 			$objTemplate->wildcard = '### WBGym WebUntis-Vertretungen ###';
 			$objTemplate->title = $this->headline;
@@ -46,27 +62,28 @@ protected $blnDebug = false;
 
 			return $objTemplate->parse();
 		}
-		
+
 		return parent::generate();
-		
+
 	}
 
-	protected function compile(){
-		
+	protected function compile()
+	{
+
 		//Check permissions and initialize
-		if(!FE_USER_LOGGED_IN){
+		if (!FE_USER_LOGGED_IN) {
 			$objHandler = new $GLOBALS['TL_PTY']['error_403']();
 			$objHandler->generate($objPage->id);
 		}
 		$this->import('FrontendUser','User');
 		$this->loadLanguageFile('wbuntis');
-		
-		
+		$this->substitutions = new Substitutions();
+
 		//Determine the mode (all subs or just mine)
 		if($this->Input->get('show') == 'all') $this->strSelector = 'all';
-		
+
 		//Find User Type
-		$objUser = \FrontendUser::getInstance();
+		$objUser = FrontendUser::getInstance();
 		if($objUser->teacher) {
 			$user = 'teacher';
 			$buttonLabel = 'Meine Vertretungen (' . $objUser->acronym . ')';
@@ -75,7 +92,7 @@ protected $blnDebug = false;
 		}
 		elseif($objUser->student) {
 			$user = 'student';
-			
+
 			//find course
 			$onlyGrade = WBGym::formSelector() == 0;
 			$course = WBGym::grade($objUser->course);
@@ -84,162 +101,137 @@ protected $blnDebug = false;
 				$buttonLabel = 'Meine Klasse (' . $course . ')';
 			}
 			else $buttonLabel = 'Mein Jahrgang (' . $course .')';
-			
+
 			//set selector
 			if($this->strSelector != 'all') $this->strSelector = $course;
 		}
 		else {
 			$this->strSelector = 'all';
 		}
-		
-		//Get Substitutions from WebUntis
-		$strError = $this->getSubstitutions($this->blnDebug);
-		if($strError) {
-			$this->Template->error = $strError;
-		}
-		
-		//Add Strings && year and reorder substitutions
-		$this->addStringsAndReorder();
-		
-		//Sort days
-		if($this->arrSubs) {
-			krsort($this->arrSubs);
-			foreach($this->arrSubs as $i => $day) {
-				
-				//Get Date and WBCalendar information
-				$this->getDateAndInfo($i);
-				
-				//sort years
-				ksort($this->arrSubs[$i]);
-				foreach($day as $kl => $years) {
-					
-					//sort klassen
-					ksort($this->arrSubs[$i][$kl]);
-					foreach($years as $cl => $classes) {
-						
-						//sort classes naturally
-						ksort($this->arrSubs[$i][$kl][$cl], SORT_NATURAL);
-						foreach($classes as $time => $hrs) {
-							
-							//sort hours naturally
-							ksort($this->arrSubs[$i][$kl][$cl][$time], SORT_NATURAL);
-							foreach($hrs as $id => $sub) {
-							
-								//merge "cancel" with "additional" entries if possible				
-								$hrs = $this->mergeCancelWithSub($sub, $id, $hrs);				
-							}
-							$this->arrSubs[$i][$kl][$cl][$time] = $hrs;
-						}
-					}
-				}
-			}
-		}
-		
-		//find and merge block hours
-		foreach ($this->arrSubs as $i => $day){ foreach($day as $kl => $years) { foreach($years as $cl => $classes) {
-			foreach ($classes as $time => $hrs) { foreach ($hrs as $id => $sub) {
-				if(is_numeric($time) && $classes[$time+1]) $classes = $this->buildBlockHour($sub, $id, $classes);
-			}} $this->arrSubs[$i][$kl][$cl] = $classes;
-		}}}
-		
+
+		$this->getOrderedSubstitutions();
+
+		if (is_null($this->Template->hint) && !$this->substitutions->isAvailable())
+		$this->Template->hint = 'Der online-Vertretungsplan ist zurzeit nicht zwingend aktuell! Bitte achtet auch auf den '
+		. 'in der Schule aushängenden Plan!';
 		$this->Template->selector = $this->strSelector;
 		$this->Template->user = $user;
 		$this->Template->buttonLabel = $buttonLabel;
 		//fix _locale in addToUrl()
-		$this->Template->allHref = explode('?_', $this->addToUrl('show=all'))[0];	
+		$this->Template->allHref = explode('?_', $this->addToUrl('show=all'))[0];
 		$this->Template->mineHref = explode('?_', $this->addToUrl('show=mine'))[0];
-		
+
 		$this->Template->dateStr = $this->arrDateStr;
 		$this->Template->subs = $this->arrSubs;
-		$this->Template->update = substr($this->intUpdate,0,10);
+		$this->Template->update = intval(substr(strval($this->substitutions->getLastImport()),0,10));
 		//WebUntis returns weird timestamps with too many digits (but if we take the first 10, the timestamp is correct)
 	}
-	
-	/*
-	* Get Subs from WebUntis
-	* 
-	* @param $blnDebug If true, expand time period
-	* @var array $arrSubsRaw
-	* @var int $intUpdate
-	*/
-	protected function getSubstitutions ($blnDebug = false) {
-		try {
-			$objClient = new WUClient();
-		}
-		catch (\Exception $e) {
-			return 'Verbindungsfehler - '.$e->getMessage().'<br />Bitte kontaktieren Sie das Webteam.';
-		}
-		
-		if(!$blnDebug) {
-			$this->intStart = date('Ymd');
-			//Freitag => 3 Tage bis Montag
-			if(date('w') == 5) $this->intEnd = date('Ymd', strtotime("+3 days"));
-			//Samstag => 2 Tage bis Montag
-			elseif(date('w') == 6) $this->intEnd = date('Ymd',strtotime('+2 days'));
-			//Sonntag - Donnerstag => ein Tag bis zum nächsten Schultag
-			else $this->intEnd = date('Ymd',strtotime('+ 1 days'));
-		}
-		else {
-			$this->intStart = date('Ymd', strtotime("-4 days"));
-			$this->intEnd = date('Ymd', strtotime("+5 days"));
-		}
-		
-		try {
-			$this->arrSubsRaw = $objClient->request('getSubstitutions',array('startDate' => $this->intStart, 'endDate' => $this->intEnd, 'departmentId' => 0))->result;
-		} catch (\Exception $e) {
-			return 'Fehler beim Abfragen der Vertretungen - '.$e->getMessage().'<br />Bitte kontaktieren Sie das Webteam.';
-		}
+	/**
+	 * gets the subs array and rearranges it into $this->arrSubs
+	 * @var array $arrSubs
+	 */
+	protected function getOrderedSubstitutions():void
+	{
+		if(!$this->substitutions->loadInto($this->arrSubsRaw)) {
+			$this->Template->hint = 'Fehler - '.$this->substitutions->error->getMessage().'<br />Bitte kontaktieren Sie das Webteam.';
+		} else {
+			$this->addStringsAndReorder();
 
-		try {
-			$this->intUpdate = $objClient->request('getLatestImportTime')->result;
-		} catch(\Exception $e) {
-			$this->intUpdate = 'unbekannt';
+			//Sort days
+			if($this->arrSubs) {
+				$this->sortByDay($this->arrSubs);
+			}
+			//find and merge block hours
+			foreach ($this->arrSubs as $i => $day){ foreach($day as $kl => $years) { foreach($years as $cl => $classes) {
+				foreach ($classes as $time => $hrs) { foreach ($hrs as $id => $sub) {
+					if(is_numeric($time) && $classes[$time+1]) $classes = $this->buildBlockHour($sub, $id, $classes);
+				}} $this->arrSubs[$i][$kl][$cl] = $classes;
+			}}}
 		}
 	}
-	
-	/*
+	/**
+	 * sort the substitutions array by different days.
+	 *
+	 * @param array $subs the array to sort (by-reference)
+	 */
+	protected function sortByDay(array &$subs):void
+	{
+		krsort($subs);
+		foreach($subs as $i => $day) {
+
+			//Get Date and WBCalendar information
+			$this->getDateAndInfo($i);
+
+			//sort years
+			ksort($subs[$i]);
+			foreach($day as $kl => $years) {
+
+				//sort klassen
+				ksort($subs[$i][$kl]);
+				foreach($years as $cl => $classes) {
+
+					//sort classes naturally
+					ksort($subs[$i][$kl][$cl], SORT_NATURAL);
+					foreach($classes as $time => $hrs) {
+
+						//sort hours naturally
+						ksort($subs[$i][$kl][$cl][$time], SORT_NATURAL);
+						foreach($hrs as $id => $sub) {
+
+							//merge "cancel" with "additional" entries if possible
+							$hrs = $this->mergeCancelWithSub($sub, $id, $hrs);
+						}
+						$subs[$i][$kl][$cl][$time] = $hrs;
+					}
+				}
+			}
+		}
+	}
+
+	/**
 	* Convert Subs to array, add teacher info and reschedule string, add year and reorder Array
-	* 
+	*
 	* @var $arrSubsRaw
 	* @var $arrSubs
 	*/
-	protected function addStringsAndReorder() {
-		
+	protected function addStringsAndReorder():void
+	{
+
 		//Initialize new Subs Array
-		$date = $this->intStart;
-		while($date <= $this->intEnd) {
+		$date = $this->substitutions->intStart;
+		while($date <= $this->substitutions->intEnd) {
 			//do not add saturdays and sundays to subs array by default
 			$weekNum = date('w', strtotime($date));
-			if($weekNum != 0 && $weekNum != 6) $this->arrSubs[$date] = array();
+			if($weekNum != 0 && $weekNum != 6) $this->arrSubs[$date] =[];
 			$date = date('Ymd', strtotime($date . ' +1 day'));
 		}
 
 		foreach($this->arrSubsRaw as $sub) {
 			//convert object to array
-			$sub = (array) $sub; 
-			
+			$sub = (array) $sub;
+
+
+			$sub['time'] = WUHelper::getSchoolHour($sub['startTime'],$sub['endTime']);
+			$sub['type_str'] = WUHelper::subType($sub);
+			if($sub['reschedule']) {
+				$sub['reschedule'] = (array) $sub['reschedule'];
+				$sub['reschedule']['str'] = $sub['type'] == 'shift' ? 'verlegt von ' : 'verlegt nach ';
+				$sub['reschedule']['str'] .= date('d.m.Y',WUHelper::dateToTime($sub['reschedule']['date']));
+			}
+			// $arrTeachers = [];
+			foreach($sub['te'] as $i => $te) {
+				if($te->name) $sub['te'][$i]->info = WBGym::getTeacherByAcronym($te->name);
+				if($te->orgname) $sub['te'][$i]->orginfo = WBGym::getTeacherByAcronym($te->orgname);
+				$arrTeachers[] = $te->name;
+				$arrTeachers[] = $te->orgname;
+			}
 			//order subtitutions
 			foreach ($sub['kl'] as $kl) {
-				$sub['time'] = WUHelper::getSchoolHour($sub['startTime'],$sub['endTime']);
-				$sub['type_str'] = WUHelper::subType($sub);
-				if($sub['reschedule']) {
-					$sub['reschedule'] = (array) $sub['reschedule'];
-					$sub['reschedule']['str'] = $sub['type'] == 'shift' ? 'verlegt von ' : 'verlegt nach ';
-					$sub['reschedule']['str'] .= date('d.m.Y',WUHelper::dateToTime($sub['reschedule']['date']));
-				}
-				$arrTeachers = array();
-				foreach($sub['te'] as $i => $te) {
-					if($te->name) $sub['te'][$i]->info = WBGym::getTeacherByAcronym($te->name);
-					if($te->orgname) $sub['te'][$i]->orginfo = WBGym::getTeacherByAcronym($te->orgname);
-					$arrTeachers[] = $te->name;
-					$arrTeachers[] = $te->orgname;
-				}
-				
-				//get year of substitution
+				//get grade of substitution
 				//e.g. "10/4" => year = 10
 				if(strlen($kl->name) == 4) {
 					$year = substr($kl->name,0,2);
-				} 
+				}
 				//e.g. "6/1" => year = 6
 				elseif(strlen($kl->name) == 3) {
 					$year = substr($kl->name,0,1);
@@ -249,63 +241,66 @@ protected $blnDebug = false;
 					$year = $kl->name;
 				}
 				$sub['course'] = $kl->name;
-				
+
 				//REORDER AND FILTER SUBSTITUTIONS
+				//TODO: move to seperate filter method!!
 				if($this->strSelector == 'all' || in_array($this->strSelector,$arrTeachers) || $this->strSelector == $kl->name) {
 					$this->arrSubs[$sub['date']][$year][$kl->name][$sub['time']][] = $sub;
 				}
 			}
 		}
 	}
-	
-	/*
+
+	/**
 	* Get Date string and WBCalendar information for the date (e.g. A-Week, Herbstferien, etc.)
 	*
 	* @param int $intTstamp
 	* @var $arrDateStr
 	*/
-	protected function getDateAndInfo($intTstamp) {
+	protected function getDateAndInfo(int $intTstamp):void
+	{
 		//generate date from string
 		$time = WUHelper::dateToTime($intTstamp);
-		
+
 		//get week info from WBCalendar
 		$arrInfo = WBCalendar::getInfoForDay($time);
 		if($arrInfo['type']['name'] == 'lessons') $strInfo = $arrInfo['title'] . '-Woche';
 		elseif($arrInfo) $strInfo = $arrInfo['type']['str'] . ' (' . $arrInfo['title'] . ')';
 		else $strInfo = '';
-		
+
 		//build date string
 		$this->arrDateStr[$intTstamp]['date'] = $GLOBALS['TL_LANG']['wbgym']['weekday'][strtolower(date('D',$time))] . ', ' . date('d.m.Y',$time);
 		$this->arrDateStr[$intTstamp]['info'] = $strInfo;
 	}
-	
-	/*
+
+	/**
 	* If $arrSub lesson is of type "cancel", seek if there is a subsutition for cancellation in $arrSubs and merge entries
-	* 
+	*
 	* @param array $arrSub
 	* @param array $arrSubs All Subs at the same time in the same class
 	* @param int $intId
 	* @return array The new $arrSubs
 	*/
-	protected function mergeCancelWithSub ($arrSub, $intId, $arrSubs) {
-		
+	protected function mergeCancelWithSub (array $arrSub,int $intId,array $arrSubs):array
+	{
+
 		$blnDoNotMerge = false;
-		
+
 		foreach ($arrSub['su'] as $su) {
 			//if cancel subject is longer than 3 chars, it's a "Kurs" and cannot be merged
-			if(strlen($su->name) > 3 || strlen($su->orgname) > 3) $blnDoNotMerge = true; 
+			if(strlen($su->name) > 3 || strlen($su->orgname) > 3) $blnDoNotMerge = true;
 		}
-	
+
 		if ($arrSub['type'] == 'cancel' && !$blnDoNotMerge) {
 			foreach($arrSubs as $idNew => $claNew) {
-				
+
 				foreach ($claNew['su'] as $su) {
 					//if additional subject is longer than 3 chars, it's a "Kurs" and cannot be merged
 					if(strlen($su->name) > 3 || strlen($su->orgname) > 3) $blnDoNotMerge = true;
 				}
-				
+
 				if(($claNew['type'] == 'add' || $claNew['type'] == 'shift') && !$blnDoNotMerge) {
-					
+
 					//set new type and add reschedule object if necessary
 					if($claNew['type'] == 'add') {
 						$arrSub['type'] = 'subst';
@@ -315,7 +310,7 @@ protected $blnDebug = false;
 						$arrSub['reschedule'] = $claNew['reschedule'];
 					}
 					$arrSub['type_str'] = WUHelper::subType($arrSub);
-					
+
 					//move subjects to "orgsubject" in cancelled object
 					foreach($arrSub['su'] as $suId => $subject) {
 						$arrSub['su'][$suId]->orgname = $subject->name;
@@ -339,14 +334,14 @@ protected $blnDebug = false;
 					//add "new subjects" from "add" object to former "cancel" object
 					$int = 0;
 					foreach($claNew['su'] as $suId => $subject) {
-						if(!isset($arrSub['su'][$int])) $arrSub['su'][$int] = new \stdClass();
+						if(!isset($arrSub['su'][$int])) $arrSub['su'][$int] = new stdClass();
 						$arrSub['su'][$int]->name = $subject->name;
 						$int++;
 					}
 					//add "new teachers" from "add" object to former "cancel" object
 					$int = 0;
 					foreach($claNew['te'] as $teId => $teacher) {
-						if(!isset($arrSub['te'][$int])) $arrSub['te'][$int] = new \stdClass();
+						if(!isset($arrSub['te'][$int])) $arrSub['te'][$int] = new stdClass();
 						$arrSub['te'][$int]->name = $teacher->name;
 						$arrSub['te'][$int]->info = $teacher->info;
 						$int++;
@@ -358,32 +353,33 @@ protected $blnDebug = false;
 						$arrSub['ro'][$int]->name = $room->name;
 						$int++;
 					}
-					
+
 					//handle info text
 					$arrSub['txt'] = $arrSub['txt'] == $claNew['txt'] ? $arrSub['txt'] : $arrSub['txt'] . $arrSubs[$idNew]['txt'];
 					unset($arrSubs[$idNew]);
-				}	
+				}
 			}
 			$arrSubs[$intId] = $arrSub;
 		}
 		return $arrSubs;
 	}
 
-	/*
+	/**
 	* Build block hour if a fitting entry is found in $arrSubs
 	*
-	* @param array $arrSub
+	* @param array $arrSub All Subs
 	* @param int $intId
 	* @param array $arrSubs All Subs within this class
 	* @return array The new $arrSubs
 	*/
-	protected function buildBlockHour($arrSub, $intId, $arrSubs) {
-		$arrFirstHour = array(1,3,5,7);
+	protected function buildBlockHour(array $arrSub,int $intId,array $arrSubs):array
+	{
+		$arrFirstHour = [1,3,5,7];
 		foreach($arrSubs[$arrSub['time']+1] as $idNew => $claNew) {
 			if(
-				in_array($arrSub['time'],$arrFirstHour) && 
+				in_array($arrSub['time'],$arrFirstHour) &&
 				(($claNew['lsid'] == $arrSub['lsid'] || $claNew['course'] < 9) && !$claNew['reschedule']) &&
-				$claNew['ro'] == $arrSub['ro'] && 
+				$claNew['ro'] == $arrSub['ro'] &&
 				$claNew['te'] == $arrSub['te'] &&
 				$claNew['su'] == $arrSub['su'] &&
 				$claNew['type'] == $arrSub['type']
