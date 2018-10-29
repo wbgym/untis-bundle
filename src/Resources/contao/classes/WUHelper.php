@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 /**
  * WBGym
  *
@@ -26,12 +26,12 @@ class WUHelper extends System
 	* @param int $intDate
 	* @return int
 	*/
-	public function dateToTime(int $intDate):int {
-		if(strlen($intDate) != 8) return false;
+	public function dateToTime(string $strDate):int {
+		if(strlen($strDate) != 8) return 0;
 		$arrDate = array(
-			'year' => substr($intDate,0,4),
-			'month' => substr($intDate,4,2),
-			'day' => substr($intDate,6,2),
+			'year' => substr($strDate,0,4),
+			'month' => substr($strDate,4,2),
+			'day' => substr($strDate,6,2),
 		);
 		return strtotime($arrDate['year'] . '-' . $arrDate['month'] . '-' . $arrDate['day']);
 	}
@@ -43,7 +43,7 @@ class WUHelper extends System
 	* @param int $intEnd
 	* @return string School Hour
 	*/
-	public function getSchoolHour(int $intStart, int $intEnd):?string {
+	public function getSchoolHour(int $intStart,int $intEnd):?string {
 		$arrStdBegin = $GLOBALS['TL_LANG']['wbuntis']['school_hours']['begin'];
 		$arrStdEnd = $GLOBALS['TL_LANG']['wbuntis']['school_hours']['end'];
 
@@ -58,7 +58,7 @@ class WUHelper extends System
 		if($intStart < 730 && $intEnd > 1725)
 			$strTime = 'Ganztägig';
 
-		return $strTime;
+		return strval($strTime);
 	}
 
 	/**
