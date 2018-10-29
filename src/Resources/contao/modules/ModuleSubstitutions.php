@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 /**
  * WBGym
  *
@@ -20,12 +20,11 @@ namespace WBGym;
 use BackendTemplate;
 use Exception;
 use FrontendUser;
+use Input;
 use Module;
 use stdClass;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use System;
-
-
 
 class ModuleSubstitutions extends Module
 {
@@ -80,7 +79,7 @@ class ModuleSubstitutions extends Module
 		$this->substitutions = new Substitutions();
 
 		//Determine the mode (all subs or just mine)
-		if($this->Input->get('show') == 'all') $this->strSelector = 'all';
+		if(Input::get('show') == 'all') $this->strSelector = 'all';
 
 		//Find User Type
 		$objUser = FrontendUser::getInstance();

@@ -16,7 +16,6 @@ declare(stric_types=1);
  */
 namespace WBGym;
 
-use dump;
 use Exception;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use System;
@@ -102,7 +101,7 @@ class Substitutions extends System
 		}
 	}
 	/**
-	 * loads the current substitutions plan
+	 * loads the current substitution plan
 	 *
 	 * @return bool success
 	 */
@@ -164,13 +163,12 @@ class Substitutions extends System
 				return false;
 			}
 		}
-		// allow extern interval manipulations (only whole interval)
+		# allow extern interval manipulations (only whole interval)
 		if ($this->intStart === 0 || $this->intEnd === 0) $this->generateDates();
 		try {
 			$this->arrSubs = (array)$this->objClient->request('getSubstitutions',['startDate' => $this->intStart, 'endDate' => $this->intEnd, 'departmentId' => 0])->result;
 		} catch (Exception $e) {
 			$this->error = $e;
-			dump($e);
 			return false;
 		}
 		$this->saveToCache();
@@ -190,7 +188,6 @@ class Substitutions extends System
 		try {
 			$this->lastImport = (int)$this->objClient->request('getLatestImportTime')->result;
 		} catch (Exception $e) {
-			dump($e);
 			$this->error = $e;
 		}
 		$lastCacheUpdate = $this->objCache->getItem($this->qualifier.'lastImportTime')->get();
@@ -208,7 +205,7 @@ class Substitutions extends System
 		$end = $this->objCache->getItem($this->qualifier.'endDate');
 		if (!$end->isHit()) return false;
 		# today has not been loaded.
-		if ($end < date("Ymd")) return false;
+		if ($end->get() < date("Ymd")) return false;
 		return true;
 	}
 	/**
@@ -289,7 +286,7 @@ class Substitutions extends System
 		$intEnd = $this->intEnd;
 		$this->intEnd = date("Ymd", strtotime($this->intEnd.' +'.$days.' days'));
 		$res = $this->loadFromUntis(); # already saves to cache.
-		# reset state.
+		# reset state
 		$this->intEnd = $intEnd;
 		$this->stripDates($this->intStart, $this->intEnd);
 		return $res;

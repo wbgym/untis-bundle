@@ -26,7 +26,8 @@ class WUHelper extends System
 	* @param int $intDate
 	* @return int
 	*/
-	public function dateToTime(string $strDate):int {
+	static function dateToTime(int $intDate):int {
+		$strDate = strval($intDate);
 		if(strlen($strDate) != 8) return 0;
 		$arrDate = array(
 			'year' => substr($strDate,0,4),
@@ -43,7 +44,7 @@ class WUHelper extends System
 	* @param int $intEnd
 	* @return string School Hour
 	*/
-	public function getSchoolHour(int $intStart,int $intEnd):?string {
+	static function getSchoolHour(int $intStart,int $intEnd):?string {
 		$arrStdBegin = $GLOBALS['TL_LANG']['wbuntis']['school_hours']['begin'];
 		$arrStdEnd = $GLOBALS['TL_LANG']['wbuntis']['school_hours']['end'];
 
@@ -67,7 +68,7 @@ class WUHelper extends System
 	* @param array $arrSub
 	* @return string
 	*/
-	public function subType(array $arrSub):string {
+	static function subType(array $arrSub):string {
 		if($arrSub['type'] == 'add') {
 			if($arrSub['su']) $category = 'class';
 			else $category = 'no_class';
