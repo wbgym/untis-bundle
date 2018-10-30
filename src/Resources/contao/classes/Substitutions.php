@@ -78,7 +78,7 @@ class Substitutions extends System
 	 *
 	 * @var string
 	 */
-	protected $qualifier = 'webuntis.';
+	protected $qualifier = 'webuntis';
 
 	/**
 	 * lifetime of a cached substitution plan
@@ -91,8 +91,8 @@ class Substitutions extends System
 	{
 		parent::__construct();
 		# not useing the contao cache, which is cleard every day (at least in our system).
-		$this->objCache = new FilesystemAdapter('', static::$cacheTime, System::getContainer()->getParameter('kernel.project_dir').'/system/cache/wbgym');
-		if ($this->blnDebug) $this->qualifier .= 'debug.';
+		if ($this->blnDebug) $this->qualifier .= '.debug';
+		$this->objCache = new FilesystemAdapter($this->qualifier, static::$cacheTime, System::getContainer()->getParameter('kernel.project_dir').'/system/cache/wbgym');
 		try {
 			$this->objClient = new WUClient();
 		} catch (Exception $e) {
@@ -138,8 +138,8 @@ class Substitutions extends System
 		if (!$this->isCached()) return false;
 		// allow extern date manipulations
 		if ($this->intStart === 0 || $this->intEnd === 0) $this->generateDates();
-		$this->arrSubs = (array)$this->objCache->getItem($this->qualifier.'substitutions')->get();
-		$this->lastImport = (int)$this->objCache->getItem($this->qualifier.'lastImportTime')->get();
+		$this->arrSubs = (array)$this->objCache->getItem('substitutions')->get();
+		$this->lastImport = (int)$this->objCache->getItem('lastImportTime')->get();
 		$this->stripDates($this->intStart, $this->intEnd);
 		return true;
 	}
@@ -158,7 +158,6 @@ class Substitutions extends System
 			try {
 				$this->lastImport = (int)$this->objClient->request('getLatestImportTime')->result;
 			} catch (Exception $e) {
-				dump($e);
 				$this->error = $e;
 				return false;
 			}
@@ -182,17 +181,23 @@ class Substitutions extends System
 	 */
 	public function isNewerVersionAvailable():?bool
 	{
-		if (!$this->isCached() && !$this->isAvailable()) return null;
-		if (!$this->isCached()) return true;
-		if (!$this->isAvailable()) return false;
-		try {
-			$this->lastImport = (int)$this->objClient->request('getLatestImportTime')->result;
-		} catch (Exception $e) {
-			$this->error = $e;
+		# arrCache is inherited from System.
+		if (is_null($this->arrCache['isNewerVersionAvailable'])) {
+			if (!$this->isCached() && !$this->isAvailable()) $this->arrCache['isNewerVersionAvailable'] = null;
+			elseif (!$this->isCached()) $this->arrCache['isNewerVersionAvailable'] = true;
+			elseif (!$this->isAvailable()) $$this->arrCache['isNewerVersionAvailable'] = false;
+			else {
+				try {
+					$this->lastImport = (int)$this->objClient->request('getLatestImportTime')->result;
+				} catch (Exception $e) {
+					$this->error = $e;
+				}
+				$lastCacheUpdate = $this->objCache->getItem('lastImportTime')->get();
+				if ($lastCacheUpdate < $this->lastImport) $this->arrCache['isNewerVersionAvailable'] = true;
+				else $this->arrCache['isNewerVersionAvailable'] = false;
+			}
 		}
-		$lastCacheUpdate = $this->objCache->getItem($this->qualifier.'lastImportTime')->get();
-		if ($lastCacheUpdate < $this->lastImport) return true;
-		return false;
+		return $this->arrCache['isNewerVersionAvailable'];
 	}
 	/**
 	 * check whether a substitution plan is cached.
@@ -200,13 +205,19 @@ class Substitutions extends System
 	 */
 	public function isCached():bool
 	{
-		if (!$this->objCache->getItem($this->qualifier.'lastImportTime')->isHit()) return false;
-		if (!$this->objCache->getItem($this->qualifier.'substitutions')->isHit()) return false;
-		$end = $this->objCache->getItem($this->qualifier.'endDate');
-		if (!$end->isHit()) return false;
-		# today has not been loaded.
-		if ($end->get() < date("Ymd")) return false;
-		return true;
+		# arrCache is inherited from System.
+		if (is_null($this->arrCache['isCached'])) {
+			if (!$this->objCache->getItem('lastImportTime')->isHit()) $this->arrCache['isCached'] = false;
+			elseif (!$this->objCache->getItem('substitutions')->isHit()) $this->arrCache['isCached'] = false;
+			else {
+				$end = $this->objCache->getItem('endDate');
+				if (!$end->isHit()) $this->arrCache['isCached'] = false;
+				# today has not been loaded.
+				elseif ($end->get() < date("Ymd")) $this->arrCache['isCached'] = false;
+				else $this->arrCache['isCached'] = true;
+			}
+		}
+		return $this->arrCache['isCached'];
 	}
 	/**
 	 * tests whether the Webuntis-Service is available
@@ -248,7 +259,7 @@ class Substitutions extends System
 			else $this->intEnd = date('Ymd', strtotime('+1 days'));
 		}
 		else {
-			$this->intStart = date('Ymd', strtotime("-14 days")); #original: -4
+			$this->intStart = date('Ymd', strtotime("-4 days"));
 			$this->intEnd = date('Ymd', strtotime("+5 days"));
 		}
 	}
@@ -257,18 +268,20 @@ class Substitutions extends System
 	 */
 	protected function saveToCache():void
 	{
+		# clear all expired items to prevent junk:
+		$this->objCache->prune();
 		# save the import time:
-		$cacheLastUpdate = $this->objCache->getItem($this->qualifier.'lastImportTime');
+		$cacheLastUpdate = $this->objCache->getItem('lastImportTime');
 		$cacheLastUpdate->set($this->lastImport);
 		$this->objCache->save($cacheLastUpdate);
 		# save the cached max time
-		$cacheEnd = $this->objCache->getItem($this->qualifier.'endDate');
+		$cacheEnd = $this->objCache->getItem('endDate');
 		$cacheEnd->set($this->intEnd);
 		$this->objCache->save($cacheEnd);
 		# save substitutions plan
 		# NOTE: saving the raw content prevents the filter from deleteing parts of the content
 		# NOTE: or all loops from beeing run twice.
-		$cacheSubstitutions = $this->objCache->getItem($this->qualifier.'substitutions');
+		$cacheSubstitutions = $this->objCache->getItem('substitutions');
 		$cacheSubstitutions->set($this->arrSubs);
 		$this->objCache->save($cacheSubstitutions);
 	}
@@ -285,8 +298,8 @@ class Substitutions extends System
 		$this->generateDates();
 		$intEnd = $this->intEnd;
 		$this->intEnd = date("Ymd", strtotime($this->intEnd.' +'.$days.' days'));
-		$res = $this->loadFromUntis(); # already saves to cache.
-		# reset state
+		$res = $this->loadFromUntis(); # already saves to cache
+		# reset state:
 		$this->intEnd = $intEnd;
 		$this->stripDates($this->intStart, $this->intEnd);
 		return $res;

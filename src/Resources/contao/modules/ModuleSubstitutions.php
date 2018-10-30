@@ -40,11 +40,6 @@ class ModuleSubstitutions extends Module
 	 * @var Substitutions
 	 */
 	protected $substitutions;
-	/**
-	* DEBUG - expanded vplan range (+- 4 days)
-	* @var bool
-	*/
-	protected $blnDebug = false;
 
 
 	public function generate()
@@ -287,7 +282,7 @@ class ModuleSubstitutions extends Module
 
 		foreach ($arrSub['su'] as $su) {
 			//if cancel subject is longer than 3 chars, it's a "Kurs" and cannot be merged
-			if(strlen($su->name) > 3 || strlen($su->orgname) > 3) $blnDoNotMerge = true;
+			if(strlen(strval($su->name)) > 3 || strlen(strval($su->orgname)) > 3) $blnDoNotMerge = true;
 		}
 
 		if ($arrSub['type'] == 'cancel' && !$blnDoNotMerge) {
@@ -295,7 +290,7 @@ class ModuleSubstitutions extends Module
 
 				foreach ($claNew['su'] as $su) {
 					//if additional subject is longer than 3 chars, it's a "Kurs" and cannot be merged
-					if(strlen($su->name) > 3 || strlen($su->orgname) > 3) $blnDoNotMerge = true;
+					if(strlen(strval($su->name)) > 3 || strlen(strval($su->orgname)) > 3) $blnDoNotMerge = true;
 				}
 
 				if(($claNew['type'] == 'add' || $claNew['type'] == 'shift') && !$blnDoNotMerge) {
