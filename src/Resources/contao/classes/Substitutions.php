@@ -109,7 +109,7 @@ class Substitutions extends System
 	{
 		$res = $this->isNewerVersionAvailable();
 		if (is_null($res)) {
-			$this->error = new Exception("no resource provider available", 1, $this->error);
+			$this->error = new Exception("Vertretungsplan kann zurzeit nicht geladen werden", 1, $this->error);
 			return false;
 		} elseif ($res === true) {
 			return $this->loadForward();
