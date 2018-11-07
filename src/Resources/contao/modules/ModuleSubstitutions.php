@@ -237,7 +237,6 @@ class ModuleSubstitutions extends Module
 				$sub['course'] = $kl->name;
 
 				//REORDER AND FILTER SUBSTITUTIONS
-				//TODO: move to seperate filter method!!
 				if($this->strSelector == 'all' || in_array($this->strSelector,$arrTeachers) || $this->strSelector == $kl->name) {
 					$this->arrSubs[$sub['date']][$year][$kl->name][$sub['time']][] = $sub;
 				}

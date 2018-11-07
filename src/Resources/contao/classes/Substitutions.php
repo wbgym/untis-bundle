@@ -85,7 +85,7 @@ class Substitutions extends System
 	 *
 	 * @var int
 	 */
-	static $cacheTime = 24*60*60*3; # cache for three days
+	protected static $cacheTime = 24*60*60*3; # cache for three days
 
 	public function __construct()
 	{
@@ -244,8 +244,6 @@ class Substitutions extends System
 	}
 	/**
 	 * automatically generate the dates to specify the load interval of the substitutions plan
-	 * @var int $intStart
-	 * @var int $intEnd
 	 */
 	public function generateDates():void
 	{
@@ -273,17 +271,19 @@ class Substitutions extends System
 		# save the import time:
 		$cacheLastUpdate = $this->objCache->getItem('lastImportTime');
 		$cacheLastUpdate->set($this->lastImport);
-		$this->objCache->save($cacheLastUpdate);
+		$this->objCache->saveDeferred($cacheLastUpdate);
 		# save the cached max time
 		$cacheEnd = $this->objCache->getItem('endDate');
 		$cacheEnd->set($this->intEnd);
-		$this->objCache->save($cacheEnd);
+		$this->objCache->saveDeferred($cacheEnd);
 		# save substitutions plan
 		# NOTE: saving the raw content prevents the filter from deleteing parts of the content
 		# NOTE: or all loops from beeing run twice.
 		$cacheSubstitutions = $this->objCache->getItem('substitutions');
 		$cacheSubstitutions->set($this->arrSubs);
-		$this->objCache->save($cacheSubstitutions);
+		$this->objCache->saveDeferred($cacheSubstitutions);
+		# save all:
+		$this->objCache->commit();
 	}
 	/**
 	 * loads the substitutions plan from webuntis some days in advance
