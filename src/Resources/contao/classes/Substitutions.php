@@ -185,7 +185,7 @@ class Substitutions extends System
 		if (is_null($this->arrCache['isNewerVersionAvailable'])) {
 			if (!$this->isCached() && !$this->isAvailable()) $this->arrCache['isNewerVersionAvailable'] = null;
 			elseif (!$this->isCached()) $this->arrCache['isNewerVersionAvailable'] = true;
-			elseif (!$this->isAvailable()) $$this->arrCache['isNewerVersionAvailable'] = false;
+			elseif (!$this->isAvailable()) $this->arrCache['isNewerVersionAvailable'] = false;
 			else {
 				try {
 					$this->lastImport = (int)$this->objClient->request('getLatestImportTime')->result;
