@@ -212,7 +212,7 @@ class ModuleSubstitutions extends Module
 				$sub['reschedule']['str'] = $sub['type'] == 'shift' ? 'verlegt von ' : 'verlegt nach ';
 				$sub['reschedule']['str'] .= date('d.m.Y',WUHelper::dateToTime($sub['reschedule']['date']));
 			}
-			// $arrTeachers = [];
+			$arrTeachers = [];
 			foreach($sub['te'] as $i => $te) {
 				if($te->name) $sub['te'][$i]->info = WBGym::getTeacherByAcronym($te->name);
 				if($te->orgname) $sub['te'][$i]->orginfo = WBGym::getTeacherByAcronym($te->orgname);
@@ -237,6 +237,7 @@ class ModuleSubstitutions extends Module
 				$sub['course'] = $kl->name;
 
 				//REORDER AND FILTER SUBSTITUTIONS
+
 				if($this->strSelector == 'all' || in_array($this->strSelector,$arrTeachers) || $this->strSelector == $kl->name) {
 					$this->arrSubs[$sub['date']][$year][$kl->name][$sub['time']][] = $sub;
 				}
