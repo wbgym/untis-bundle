@@ -105,9 +105,34 @@ class ModuleSubstitutions extends Module
 
 		$this->getOrderedSubstitutions();
 
-		if (is_null($this->Template->hint) && !$this->substitutions->isAvailable())
-		$this->Template->hint = 'Der online-Vertretungsplan ist zurzeit nicht zwingend aktuell! Bitte achtet auch auf den '
-		. 'in der Schule aushängenden Plan!';
+		// WebUntis returns weird timestamps with too many digits (but if we take the first 10, the timestamp is correct)
+		$intUpdate = intval(substr(strval($this->substitutions->getLastImport()),0,10));
+
+		// Check if last update is more then 4 days behind
+		$objUpdate = new \DateTime();
+		$objUpdate->setTimestamp($intUpdate);
+		$objNow = new \DateTime("now");
+
+		// There are four phases of warnings (green, yellow, orange, red)
+		
+		if ($objNow->diff($objUpdate)->d >= 4)
+		{
+			$intUpdateWarningLevel = 3;
+		}
+		elseif ($objNow->diff($objUpdate)->d >= 3)
+		{
+			$intUpdateWarningLevel = 2;
+		}
+		elseif ($objNow->diff($objUpdate)->d >= 2)
+		{
+			$intUpdateWarningLevel = 1;
+		}
+		elseif ($objNow->diff($objUpdate)->d < 2)
+		{
+			$intUpdateWarningLevel = 0;
+		}
+
+		$this->Template->cacheHint = !$this->substitutions->isAvailable();
 		$this->Template->selector = $this->strSelector;
 		$this->Template->user = $user;
 		$this->Template->buttonLabel = $buttonLabel;
@@ -117,8 +142,8 @@ class ModuleSubstitutions extends Module
 
 		$this->Template->dateStr = $this->arrDateStr;
 		$this->Template->subs = $this->arrSubs;
-		$this->Template->update = intval(substr(strval($this->substitutions->getLastImport()),0,10));
-		//WebUntis returns weird timestamps with too many digits (but if we take the first 10, the timestamp is correct)
+		$this->Template->update = $intUpdate;
+		$this->Template->updateWarningLevel = $intUpdateWarningLevel;
 	}
 	/**
 	 * gets the subs array and rearranges it into $this->arrSubs

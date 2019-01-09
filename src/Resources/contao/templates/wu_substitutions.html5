@@ -2,12 +2,26 @@
 
 <h2>Übersicht der Stundenplanänderungen</h2>
 
-<p><i>Zuletzt aktualisiert: <?= date('d.m.Y H:i',$this->update) ?>.</i></p>
-<?php if (!is_null($this->hint)): ?>
+<p><strong>Zuletzt aktualisiert: <span class="lastUpdate level_<?= $this->updateWarningLevel ?>"><?= date('d.m.Y H:i',$this->update) ?></span></strong></p>
+
+<?php if ($this->updateWarningLevel >= 3) : ?>
 <div class="hint ce_text">
-	<p>Hinweis: <?= $this->hint ?></p>
+	<p><strong>ACHTUNG:</strong> Der Vertretungsplan wurde seit mehr als 4 Tagen nicht aktualisiert. Bitte verlasst euch nicht auf die hier angezeigten
+	Vertretungen. Bedenkt, dass im Zweifelsfall nur der im Schulhaus ausgehängte Plan gilt!</p>
 </div><br />
 <?php endif; ?>
+<?php if (!is_null($this->hint)): ?>
+<div class="hint ce_text">
+	<p>Hinweis: <?= $this->hint; ?></p>
+</div><br />
+<?php endif ;?>
+<?php if ($this->cacheHint): ?>
+<div class="hint ce_text">
+	<p>Hinweis: Der aktuelle Online-Vertretungsplan ist zurzeit nicht verfügbar, es wird die letzte abrufbare Version angezeigt. 
+	Die angezeigten Vertretungen sind daher möglicherweise veraltet! Bitte achtet auf den Aushang im Schulhaus</p>
+</div><br />
+<?php endif; ?>
+
 <div class="selection">
 	<?php if($this->user) : ?>
 		<a href="<?= $this->mineHref ?>" class="btn<?php if($this->selector != 'all') : ?> active<?php endif; ?>">
