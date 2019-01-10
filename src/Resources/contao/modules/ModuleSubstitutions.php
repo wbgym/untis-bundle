@@ -113,21 +113,23 @@ class ModuleSubstitutions extends Module
 		$objUpdate->setTimestamp($intUpdate);
 		$objNow = new \DateTime("now");
 
+		$intDiff = $objUpdate->diff($objNow)->format("%a");
+
 		// There are four phases of warnings (green, yellow, orange, red)
 		
-		if ($objNow->diff($objUpdate)->d >= 4)
+		if ($intDiff >= 4)
 		{
 			$intUpdateWarningLevel = 3;
 		}
-		elseif ($objNow->diff($objUpdate)->d >= 3)
+		elseif ($intDiff >= 3)
 		{
 			$intUpdateWarningLevel = 2;
 		}
-		elseif ($objNow->diff($objUpdate)->d >= 2)
+		elseif ($intDiff >= 2)
 		{
 			$intUpdateWarningLevel = 1;
 		}
-		elseif ($objNow->diff($objUpdate)->d < 2)
+		elseif ($intDiff < 2)
 		{
 			$intUpdateWarningLevel = 0;
 		}

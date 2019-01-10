@@ -17,8 +17,8 @@
 <?php endif ;?>
 <?php if ($this->cacheHint): ?>
 <div class="hint ce_text">
-	<p>Hinweis: Der aktuelle Online-Vertretungsplan ist zurzeit nicht verfügbar, es wird die letzte abrufbare Version angezeigt. 
-	Die angezeigten Vertretungen sind daher möglicherweise veraltet! Bitte achtet auf den Aushang im Schulhaus</p>
+	<p><strong>WebUntis ist momentan offline.</strong> Der aktuelle Online-Vertretungsplan ist zurzeit nicht verfügbar, es wird die letzte abrufbare Version angezeigt. 
+	Die angezeigten Vertretungen sind daher möglicherweise veraltet! Bitte achtet auf den Aushang im Schulhaus.</p>
 </div><br />
 <?php endif; ?>
 
