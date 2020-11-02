@@ -40,11 +40,11 @@
 	<div class="vplan-block-header<?php if($first) : ?> open<?php endif; ?>">
 		<h2>
 			<?= $this->dateStr[$i]['date'] ?>
-			<?php if($this->dateStr[$i]['info']) : ?><span class="vplan-week" style="color:#dd5247"> <?= $this->dateStr[$i]['info'] ?></span><?php endif; ?>
+			<?php if($this->dateStr[$i]['info']) : ?><span class="vplan-week"> <?= $this->dateStr[$i]['info'] ?></span><?php endif; ?>
 		</h2>
 	</div>
 
-	<div class="vplan-block"<?php if($first) : ?>style="display:block"<?php endif; ?>>
+	<div class="vplan-block<?php if($first) : ?> first<?php endif; ?>">
 
 	<?php if($years) : ?>
 
