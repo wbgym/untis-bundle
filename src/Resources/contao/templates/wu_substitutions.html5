@@ -65,7 +65,7 @@
 		</thead>
 		<tbody>
 			<?php foreach($years as $yr => $courses) : ?><tr>
-				<th colspan="10" align="center"><b><?php if($yr == '11' || $yr == '12') : ?>Jahrgang <?php else : ?>Klasse <?php endif; ?><?php echo $yr; ?></b></th></tr>
+				<th colspan="10"><b><?php if($yr == '11' || $yr == '12') : ?>Jahrgang <?php else : ?>Klasse <?php endif; ?><?php echo $yr; ?></b></th></tr>
 				<?php foreach($courses as $times) : ?>
 				<?php foreach($times as $time => $subs) : ?>
 					<?php foreach($subs as $sub) : ?>
@@ -104,7 +104,7 @@
 						<td>
 						<?php foreach($sub['te'] as $teacher) : ?>
 							<?php if($teacher->orgname) : ?>
-								<span style="text-decoration:line-through;">
+								<div class="inline" style="text-decoration:line-through;">
 									<?php if($teacher->orginfo) : ?>
 									<div class="abbr">
 										<div class="invisible abbr-title">
@@ -115,9 +115,9 @@
 										<span class="abbr-text"><?= $teacher->orgname ?> </span>
 									</div>
 									<?php else : ?><?= $teacher->orgname ?><?php endif; ?>
-								</span>
+									</div>
 							<?php else : ?>
-							<?php if($sub['type'] == 'cancel' || $sub['type'] == 'free') : ?><span style="text-decoration:line-through;"><?php endif; ?>
+							<?php if($sub['type'] == 'cancel' || $sub['type'] == 'free') : ?><div class="inline" style="text-decoration:line-through;"><?php endif; ?>
 									<?php if($teacher->info) : ?>
 									<div class="abbr">
 										<div class="invisible abbr-title">
@@ -128,7 +128,7 @@
 										<span class="abbr-text"><?= $teacher->name ?> </span>
 									</div>
 									<?php else : ?><?= $teacher->name ?><?php endif; ?>
-							<?php if($sub['type'] == 'cancel' || $sub['type'] == 'free') : ?></span><?php endif; ?>
+							<?php if($sub['type'] == 'cancel' || $sub['type'] == 'free') : ?></div><?php endif; ?>
 							<?php endif; ?>
 						<?php endforeach; ?>
 						</td>
